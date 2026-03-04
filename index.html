@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Ayudemos a mi TOM</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --beige: #d8c9b6;
+  --beige-dark: #c6b299;
+  --gray-box: #e6e6e6;
+  --gray-dark: #bdbdbd;
+  --paid: #7fbf7f;
+  --separated: #e6c36b;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background: #efefef;
+}
+
+/* HEADER */
+.header {
+  background: var(--beige);
+  padding: 40px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.header-text {
+  max-width: 60%;
+}
+
+.header h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 48px;
+  margin: 0;
+}
+
+.header p {
+  margin-top: 10px;
+  line-height: 1.5;
+}
+
+.header img {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* INFO BAR */
+.info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: var(--beige-dark);
+  color: #333;
+  text-align: center;
+  padding: 15px;
+  font-weight: 500;
+}
+
+/* GRID */
+.container {
+  padding: 30px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  max-width: 900px;
+  margin: auto;
+}
+
+.number {
+  padding: 18px;
+  background: var(--gray-box);
+  text-align: center;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.number.available { background: var(--gray-box); }
+.number.separated { background: var(--separated); }
+.number.paid { background: var(--paid); }
+
+.number:hover {
+  transform: scale(1.03);
+}
+
+/* BOTONES */
+.controls {
+  text-align: center;
+  margin-top: 20px;
+}
+
+button {
+  padding: 8px 18px;
+  border: none;
+  background: #333;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button:hover {
+  opacity: 0.8;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-text">
+    <h1>Ayudemos a mi TOM</h1>
+    <p>
+      Rifa solidaria para apoyar los gastos de hospitalización de mi mascota TOM 🐾<br>
+      🎟 Juega el sábado 4 de abril<br>
+      💰 Valor por puesto: $15.000<br>
+      🏆 Premio: $500.000
+    </p>
+  </div>
+
+  <div class="image-wrapper">
+    <!-- <img src="tom.png" alt="Tom"> -->
+    <div class="circle-decoration"></div>
+  </div>
+</div>
+
+<div class="info">
+  <div>Responsable: Alejandro Arévalo Arévalo</div>
+  <div>Nequi o Llave: 3132851722</div>
+</div>
+
+<div class="container">
+  <div class="grid" id="grid"></div>
+
+ <div class="controls">
+  <button id="adminBtn">Modo administrador</button>
+  <button id="logoutBtn" style="display:none;">Salir modo admin</button>
+</div>
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, setDoc, onSnapshot } 
+from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// 🔥 TU CONFIG REAL
+const firebaseConfig = {
+    apiKey: "AIzaSyBJTufI5H3eHBf4MswogsDXXpqa1FMtjqY",
+    authDomain: "tom-rifasolidaria.firebaseapp.com",
+    projectId: "tom-rifasolidaria",
+    storageBucket: "tom-rifasolidaria.firebasestorage.app",
+    messagingSenderId: "218634555323",
+    appId: "1:218634555323:web:646aa54bef8bfc5a3f7e9e",
+    measurementId: "G-FPMJ2E113K"
+  };
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const grid = document.getElementById("grid");
+const adminBtn = document.getElementById("adminBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+
+// 🔐 CAMBIA ESTA CONTRASEÑA
+const PASSWORD = "tom2026";
+
+let isAdmin = false;
+
+// ACTIVAR MODO ADMIN
+adminBtn.onclick = () => {
+  const input = prompt("Ingrese la contraseña de administrador:");
+
+  if (input === PASSWORD) {
+    isAdmin = true;
+    alert("Modo administrador activado");
+    adminBtn.style.display = "none";
+    logoutBtn.style.display = "inline";
+  } else {
+    alert("Contraseña incorrecta");
+  }
+};
+
+// SALIR MODO ADMIN
+logoutBtn.onclick = () => {
+  isAdmin = false;
+  adminBtn.style.display = "inline";
+  logoutBtn.style.display = "none";
+};
+
+// CREAR GRID
+function createGrid() {
+  for (let i = 0; i < 100; i++) {
+    const num = i.toString().padStart(2, '0');
+    const div = document.createElement("div");
+    div.classList.add("number", "available");
+    div.innerText = num;
+
+    // Escuchar cambios en tiempo real
+    onSnapshot(doc(db, "numbers", num), snap => {
+      if (snap.exists()) {
+        div.className = "number " + snap.data().status;
+      } else {
+        div.className = "number available";
+      }
+    });
+
+    // CLICK → Apartado
+    div.onclick = async () => {
+      if (!isAdmin) return;
+      await setDoc(doc(db, "numbers", num), { status: "separated" });
+    };
+
+    // CLICK DERECHO → Pagado
+    div.oncontextmenu = async (e) => {
+      e.preventDefault();
+      if (!isAdmin) return;
+      await setDoc(doc(db, "numbers", num), { status: "paid" });
+    };
+
+    // DOBLE CLICK → Disponible
+    div.ondblclick = async () => {
+      if (!isAdmin) return;
+      await setDoc(doc(db, "numbers", num), { status: "available" });
+    };
+
+    grid.appendChild(div);
+  }
+}
+
+createGrid();
+
+</script>
+
+</body>
+</html>
